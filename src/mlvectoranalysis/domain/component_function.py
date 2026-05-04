@@ -18,8 +18,9 @@ class ComponentFunction:
         expanded_expr = expand(self.symbolic_form)
         return ComponentFunction(str(expanded_expr), self.variable)
 
-    def differentiate(self):
-        return diff(self.symbolic_form, self.symbol)
+    def differentiate(self) -> "ComponentFunction":
+        derivative_expr = diff(self.symbolic_form, self.symbol)
+        return ComponentFunction(str(derivative_expr), self.variable)
 
     def integrate(self) -> "ComponentFunction":
         integrated_expr = integrate(self.symbolic_form, self.symbol)

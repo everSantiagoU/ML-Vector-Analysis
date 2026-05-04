@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sympy import Matrix, sqrt, sympify
+from sympy import Matrix, sqrt
 
 from mlvectoranalysis.domain.component_function import ComponentFunction
 
@@ -34,9 +34,9 @@ class VectorFunction:
 
     def differentiate(self) -> "VectorFunction":
         return VectorFunction(
-            ComponentFunction(str(self.component_x.differentiate()), self.variable),
-            ComponentFunction(str(self.component_y.differentiate()), self.variable),
-            ComponentFunction(str(self.component_z.differentiate()), self.variable),
+            self.component_x.differentiate(),
+            self.component_y.differentiate(),
+            self.component_z.differentiate(),
             self.name,
             self.variable,
         )

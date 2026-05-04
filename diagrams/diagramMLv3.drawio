@@ -70,7 +70,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="5MWjXIOEzLuXtqxIq4Sf-21" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" value="VectorFunction" vertex="1">
-          <mxGeometry height="190" width="220" x="520" y="240" as="geometry" />
+          <mxGeometry height="280" width="220" x="520" y="200" as="geometry" />
         </mxCell>
         <mxCell id="5MWjXIOEzLuXtqxIq4Sf-22" parent="5MWjXIOEzLuXtqxIq4Sf-21" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" value="-name : str&amp;nbsp;&lt;div&gt;-variable : str&amp;nbsp;&lt;/div&gt;&lt;div&gt;-componentX : ComponentFunction&amp;nbsp;&lt;/div&gt;&lt;div&gt;-componentY : &amp;nbsp;ComponentFunction&amp;nbsp;&lt;/div&gt;&lt;div&gt;-componentZ : ComponentFunction&lt;/div&gt;" vertex="1">
           <mxGeometry height="84" width="220" y="26" as="geometry" />
@@ -78,8 +78,8 @@
         <mxCell id="5MWjXIOEzLuXtqxIq4Sf-23" parent="5MWjXIOEzLuXtqxIq4Sf-21" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" value="" vertex="1">
           <mxGeometry height="8" width="220" y="110" as="geometry" />
         </mxCell>
-        <mxCell id="5MWjXIOEzLuXtqxIq4Sf-24" parent="5MWjXIOEzLuXtqxIq4Sf-21" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" value="&lt;div&gt;&amp;nbsp; +simplifyAll() : VectorFunction&lt;/div&gt;&lt;div&gt;&amp;nbsp; +differentiate() : VectorFunction&lt;/div&gt;&lt;div&gt;&amp;nbsp; +evaluate(value : float) : tuple&lt;/div&gt;&lt;div&gt;&amp;nbsp; +getComponents() : tuple&lt;/div&gt;" vertex="1">
-          <mxGeometry height="72" width="220" y="118" as="geometry" />
+        <mxCell id="5MWjXIOEzLuXtqxIq4Sf-24" parent="5MWjXIOEzLuXtqxIq4Sf-21" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" value="&lt;div&gt;&amp;nbsp; +simplifyAll() : VectorFunction&lt;/div&gt;&lt;div&gt;&amp;nbsp; +differentiate() : VectorFunction&lt;/div&gt;&lt;div&gt;&amp;nbsp; +evaluate(value : float) : tuple&lt;/div&gt;&lt;div&gt;&amp;nbsp; +getComponents() : tuple&lt;/div&gt;&lt;div&gt;&amp;nbsp;&amp;nbsp;+simplifyAll() : VectorFunction&lt;/div&gt;&lt;div&gt;&amp;nbsp; +velocity() : VectorFunction&lt;/div&gt;&lt;div&gt;&amp;nbsp;&amp;nbsp;+acceleration() : VectorFunction&lt;/div&gt;&lt;div&gt;&amp;nbsp; +toMatrix() : Matrix&lt;/div&gt;&lt;div&gt;&amp;nbsp;&amp;nbsp;+norm()&lt;/div&gt;&lt;div&gt;&amp;nbsp; +speed()&lt;br&gt;&lt;/div&gt;&lt;div&gt;&amp;nbsp;&amp;nbsp;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="162" width="220" y="118" as="geometry" />
         </mxCell>
         <mxCell id="5MWjXIOEzLuXtqxIq4Sf-25" edge="1" parent="1" source="5MWjXIOEzLuXtqxIq4Sf-12" style="endArrow=block;dashed=1;endFill=0;endSize=12;html=1;rounded=0;exitX=0.31;exitY=1.026;exitDx=0;exitDy=0;exitPerimeter=0;" value="">
           <mxGeometry relative="1" width="160" as="geometry">
@@ -91,7 +91,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="5MWjXIOEzLuXtqxIq4Sf-26" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" value="ComponentFunction" vertex="1">
-          <mxGeometry height="210" width="320" x="550" y="480" as="geometry" />
+          <mxGeometry height="210" width="320" x="550" y="520" as="geometry" />
         </mxCell>
         <mxCell id="5MWjXIOEzLuXtqxIq4Sf-27" parent="5MWjXIOEzLuXtqxIq4Sf-26" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" value="-expression : str&lt;div&gt;-variable : str&lt;br&gt;&lt;/div&gt;&lt;div&gt;-symbolicForm : object&lt;/div&gt;&lt;div&gt;-symbol : Symbol&lt;br&gt;&lt;/div&gt;" vertex="1">
           <mxGeometry height="64" width="320" y="26" as="geometry" />
@@ -102,7 +102,7 @@
         <mxCell id="5MWjXIOEzLuXtqxIq4Sf-29" parent="5MWjXIOEzLuXtqxIq4Sf-26" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" value="&lt;div&gt;+simplify() : ComponentFunction&lt;/div&gt;&lt;div&gt;+expand() : ComponentFunction&lt;br&gt;&lt;/div&gt;&lt;div&gt;+ differentiate() : shiert +evaluate(value: float): float&lt;/div&gt;&lt;div&gt;+integrate() : shiert&lt;/div&gt;&lt;div&gt;+getType): str&lt;/div&gt;&lt;div&gt;+isEquivalentTo(other : str | ComponentFunction) : bool&lt;br&gt;&lt;/div&gt;&lt;div&gt;+evaluate(value : float) : float&lt;/div&gt;" vertex="1">
           <mxGeometry height="112" width="320" y="98" as="geometry" />
         </mxCell>
-        <mxCell id="5MWjXIOEzLuXtqxIq4Sf-30" edge="1" parent="1" source="5MWjXIOEzLuXtqxIq4Sf-27" style="endArrow=diamondThin;endFill=1;endSize=24;html=1;rounded=0;exitX=0.01;exitY=0.848;exitDx=0;exitDy=0;exitPerimeter=0;" value="">
+        <mxCell id="5MWjXIOEzLuXtqxIq4Sf-30" edge="1" parent="1" source="5MWjXIOEzLuXtqxIq4Sf-27" style="endArrow=diamondThin;endFill=1;endSize=24;html=1;rounded=0;exitX=-0.007;exitY=0.224;exitDx=0;exitDy=0;exitPerimeter=0;" value="">
           <mxGeometry relative="1" width="160" as="geometry">
             <Array as="points">
               <mxPoint x="440" y="560" />
@@ -139,10 +139,10 @@
             <mxPoint x="870" y="600" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="5MWjXIOEzLuXtqxIq4Sf-37" edge="1" parent="1" source="5MWjXIOEzLuXtqxIq4Sf-35" style="endArrow=open;endFill=1;endSize=12;html=1;rounded=0;entryX=0.995;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.12;exitY=1.01;exitDx=0;exitDy=0;exitPerimeter=0;" target="5MWjXIOEzLuXtqxIq4Sf-23" value="">
+        <mxCell id="5MWjXIOEzLuXtqxIq4Sf-37" edge="1" parent="1" source="5MWjXIOEzLuXtqxIq4Sf-35" style="endArrow=open;endFill=1;endSize=12;html=1;rounded=0;entryX=1.002;entryY=0.241;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.12;exitY=1.01;exitDx=0;exitDy=0;exitPerimeter=0;" target="5MWjXIOEzLuXtqxIq4Sf-24" value="">
           <mxGeometry relative="1" width="160" as="geometry">
             <Array as="points">
-              <mxPoint x="840" y="350" />
+              <mxPoint x="840" y="357" />
             </Array>
             <mxPoint x="880" y="350" as="sourcePoint" />
             <mxPoint x="890" y="300" as="targetPoint" />

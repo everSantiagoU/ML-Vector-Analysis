@@ -1,5 +1,3 @@
-from sympy import sympify
-
 from mlvectoranalysis.domain.component_function import ComponentFunction
 
 
@@ -25,7 +23,18 @@ def test_component_function_expand():
 def test_component_function_differentiate():
     component = ComponentFunction("t**2")
     derivative = component.differentiate()
-    assert derivative == sympify("2*t")
+    assert isinstance(derivative, ComponentFunction)
+    assert derivative.variable == "t"
+    assert derivative.is_equivalent_to("2*t")
+
+
+def test_component_function_differentiate_preserves_custom_variable():
+    component = ComponentFunction("x**3 + x", variable="x")
+    derivative = component.differentiate()
+
+    assert isinstance(derivative, ComponentFunction)
+    assert derivative.variable == "x"
+    assert derivative.is_equivalent_to("3*x**2 + 1")
 
 
 def test_component_function_integrate():
