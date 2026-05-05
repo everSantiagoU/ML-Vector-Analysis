@@ -71,6 +71,13 @@ class InputValidator:
 
         return all(self._uses_allowed_symbols(component) for component in components)
 
+    def validate_component_expression(self, expr: str) -> bool:
+        normalized_expr = self.normalizer.normalize(expr)
+        if not normalized_expr:
+            return False
+
+        return self._uses_allowed_symbols(normalized_expr)
+
     def extract_components(self, text: str) -> tuple[str, ...]:
         vector_expression = self._extract_vector_expression(text)
         if not self._has_wrapping_vector_delimiters(vector_expression):

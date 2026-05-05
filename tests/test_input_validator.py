@@ -88,6 +88,18 @@ def test_input_validator_validate_allowed_symbols_accepts_custom_variable():
     assert validator.validate_allowed_symbols("<x,x**2,sin(x)>")
 
 
+def test_input_validator_validate_component_expression_accepts_valid_component():
+    validator = InputValidator()
+
+    assert validator.validate_component_expression("t^2 + sen(t)")
+
+
+def test_input_validator_validate_component_expression_rejects_invalid_component():
+    validator = InputValidator()
+
+    assert not validator.validate_component_expression("x + 1")
+
+
 def test_input_validator_can_be_imported_from_input_package():
     from mlvectoranalysis.input import InputValidator as ExportedInputValidator
 
