@@ -6,13 +6,17 @@ import re
 class InputNormalizer:
     def normalize(self, text: str) -> str:
         text_without_extra_spaces = self.remove_extra_spaces(text)
-        return self.standardize_syntax(text_without_extra_spaces)
+        return self.remove_extra_spaces(self.standardize_syntax(text_without_extra_spaces))
 
     def remove_extra_spaces(self, text: str) -> str:
+        if not isinstance(text, str):
+            raise ValueError("Input text must be a string.")
         compact_text = re.sub(r"\s+", " ", text.strip())
         return re.sub(r"\s*([,()<>+\-*/=])\s*", r"\1", compact_text)
 
     def standardize_syntax(self, text: str) -> str:
+        if not isinstance(text, str):
+            raise ValueError("Input text must be a string.")
         standardized_text = text
         standardized_text = standardized_text.replace("^", "**")
         standardized_text = standardized_text.replace("π", "pi")

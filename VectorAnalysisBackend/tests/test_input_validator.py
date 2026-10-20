@@ -104,3 +104,49 @@ def test_input_validator_can_be_imported_from_input_package():
     from mlvectoranalysis.input import InputValidator as ExportedInputValidator
 
     assert ExportedInputValidator is InputValidator
+
+
+def test_invalid_vectors_rejected(invalid_vector):
+    assert InputValidator().validate_components(invalid_vector) is False
+
+
+def test_invalid_scalar_grammar(invalid_component):
+    validator = InputValidator()
+    assert validator.validate_component_expression(invalid_component) is False
+    if isinstance(invalid_component, str):
+        assert validator.validate_allowed_symbols(f'<{invalid_component},t,t>') is False
+
+
+@pytest.mark.parametrize('text', ['r(x)=<t,t,t>', 'prefix=<t,t,t>', 'r(t)=r(t)=<t,t,t>', '<(t,t,t>', '<t),t,t>', None])
+def test_bad_format_and_extraction(text):
+    validator = InputValidator()
+    assert validator.validate_format(text) is False
+    with pytest.raises(ValueError):
+        validator.extract_components(text)
+
+
+def test_genuinely_nested_comma():
+    validator = InputValidator()
+    assert validator.extract_components('<log(t,2),t,0>') == ('log(t,2)', 't', '0')
+    assert validator.validate_components('<log(t,2),t,0>')
+
+
+@pytest.mark.parametrize('method', ['validate_format', 'validate_components', 'validate_allowed_symbols', 'validate_component_expression'])
+def test_boolean_methods_handle_nontext(method):
+    assert getattr(InputValidator(), method)(None) is False
+
+
+def test_unsupported_tree_rejected_before_symbolic_construction(monkeypatch):
+    import mlvectoranalysis._scalar_expression as grammar
+
+    def forbidden(*args):
+        pytest.fail('Symbolic construction ran before grammar validation finished')
+
+    monkeypatch.setattr(grammar, '_build', forbidden)
+    assert not InputValidator().validate_component_expression('sin(t)+t.real')
+
+
+def test_expected_components_remains_configurable():
+    validator = InputValidator(expected_components=2)
+    assert validator.validate_components('<t,t>')
+    assert not validator.validate_components('<t,t,t>')

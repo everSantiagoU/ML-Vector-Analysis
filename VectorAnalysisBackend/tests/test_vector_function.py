@@ -95,3 +95,33 @@ def test_vector_function_speed():
     )
 
     assert vector.speed().equals(sympify("sqrt(4*t**2 + 1)"))
+
+
+def test_custom_vector_transformations_preserve_metadata_and_original():
+    import pytest
+    vector = VectorFunction(ComponentFunction('x**3', 'x'), ComponentFunction('sin(x)', 'x'), ComponentFunction('4', 'x'), name='path', variable='x')
+    before = vector.to_matrix()
+    assert before.shape == (3, 1)
+    assert isinstance(vector.get_components(), tuple)
+    for transformed in [vector.simplify_all(), vector.differentiate(), vector.velocity(), vector.acceleration()]:
+        assert transformed is not vector
+        assert transformed.name == 'path'
+        assert transformed.variable == 'x'
+        assert all(c.variable == 'x' for c in transformed.get_components())
+    assert vector.to_matrix() == before
+    assert vector.acceleration().evaluate(0) == pytest.approx((0, 0, 0))
+    assert vector.velocity().evaluate(0) == pytest.approx((0, 1, 0))
+    assert float(vector.speed().subs(vector.component_x.symbol, 0)) == pytest.approx(1)
+
+
+def test_zero_and_constant_vectors_and_shared_components():
+    for expression in ['0', '3']:
+        component = ComponentFunction(expression)
+        vector = VectorFunction(component, component, component)
+        assert all(c is component for c in vector.get_components())
+        assert vector.to_matrix().shape == (3, 1)
+        assert vector.evaluate(4) == (float(expression),) * 3
+        assert vector.velocity().evaluate(4) == (0.0, 0.0, 0.0)
+        assert vector.acceleration().evaluate(4) == (0.0, 0.0, 0.0)
+        assert vector.speed() == 0
+        assert vector.norm().equals(sqrt(3 * int(expression)**2))

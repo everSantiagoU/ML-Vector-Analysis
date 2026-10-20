@@ -67,3 +67,26 @@ def test_component_function_type_polynomial():
 def test_component_function_type_trigonometric():
     component = ComponentFunction("sin(t)")
     assert component.get_type() == "trigonometric"
+
+
+def test_transformations_keep_variable_without_mutation():
+    component = ComponentFunction('(x+1)**2', variable='x')
+    original = component.symbolic_form
+    for method in ['simplify', 'expand', 'differentiate', 'integrate']:
+        result = getattr(component, method)()
+        assert result is not component
+        assert result.variable == 'x'
+        assert component.symbolic_form == original
+        assert component.expression == '(x+1)**2'
+    assert component.integrate().differentiate().is_equivalent_to(component)
+
+
+def test_generated_symbolic_functions_remain_supported():
+    component = ComponentFunction('exp(-t**2)')
+    integral = component.integrate()
+    assert integral.differentiate().is_equivalent_to(component)
+
+
+def test_real_numeric_evaluation():
+    import pytest
+    assert ComponentFunction('sin(t)').evaluate(0.5) == pytest.approx(0.479425538604203)

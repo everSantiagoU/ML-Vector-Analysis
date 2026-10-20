@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import re
 
-from sympy import E, cos, exp, log, pi, sin, sqrt, sympify, tan
-from sympy.core.sympify import SympifyError
+from sympy import Expr, Symbol
+
+from mlvectoranalysis._scalar_expression import CONSTANTS, FUNCTIONS, parse_scalar, validate_variable
 
 from mlvectoranalysis.input.input_normalizer import InputNormalizer
 
@@ -15,42 +16,19 @@ class InputValidator:
         expected_components: int = 3,
         normalizer: InputNormalizer | None = None,
     ) -> None:
+        validate_variable(variable)
         self.variable = variable
         self.expected_components = expected_components
-        self.normalizer = normalizer or InputNormalizer()
-        self.allowed_names = {
-            variable,
-            "sin",
-            "cos",
-            "tan",
-            "sqrt",
-            "exp",
-            "log",
-            "pi",
-            "E",
-        }
-        self.sympy_locals = {
-            variable: sympify(variable),
-            "sin": sin,
-            "cos": cos,
-            "tan": tan,
-            "sqrt": sqrt,
-            "exp": exp,
-            "log": log,
-            "pi": pi,
-            "E": E,
-        }
+        self.normalizer = normalizer if normalizer is not None else InputNormalizer()
+        self.allowed_names = {variable, *FUNCTIONS, *CONSTANTS}
+        self.sympy_locals = {variable: Symbol(variable), **FUNCTIONS, **CONSTANTS}
 
     def validate_format(self, text: str) -> bool:
         try:
-            vector_expression = self._extract_vector_expression(text)
+            self.extract_components(text)
         except ValueError:
             return False
-
-        if not vector_expression:
-            return False
-
-        return self._has_wrapping_vector_delimiters(vector_expression)
+        return True
 
     def validate_components(self, text: str) -> bool:
         try:
@@ -72,11 +50,15 @@ class InputValidator:
         return all(self._uses_allowed_symbols(component) for component in components)
 
     def validate_component_expression(self, expr: str) -> bool:
-        normalized_expr = self.normalizer.normalize(expr)
-        if not normalized_expr:
+        try:
+            self.parse_component_expression(expr)
+        except ValueError:
             return False
+        return True
 
-        return self._uses_allowed_symbols(normalized_expr)
+    def parse_component_expression(self, expr: str) -> Expr:
+        """Validate and construct once; shared by the parser and boolean checks."""
+        return parse_scalar(self.normalizer.normalize(expr), self.variable)
 
     def extract_components(self, text: str) -> tuple[str, ...]:
         vector_expression = self._extract_vector_expression(text)
@@ -99,7 +81,12 @@ class InputValidator:
             raise ValueError("Input text cannot be empty.")
 
         if "=" in normalized_text:
-            _, normalized_text = normalized_text.rsplit("=", 1)
+            if normalized_text.count("=") != 1:
+                raise ValueError("Vector input must contain a single assignment.")
+            header, normalized_text = normalized_text.split("=")
+            match = re.fullmatch(r"([A-Za-z_]\w*)\(([^()]*)\)", header)
+            if match is None or match.group(2) != self.variable:
+                raise ValueError(f"Expected a vector header name({self.variable})=.")
 
         if normalized_text.startswith("<") or normalized_text.startswith("("):
             return normalized_text
@@ -108,6 +95,8 @@ class InputValidator:
 
     def _has_wrapping_vector_delimiters(self, text: str) -> bool:
         delimiter_pairs = {"<": ">", "(": ")"}
+        if not text:
+            return False
         opening_delimiter = text[0]
         closing_delimiter = delimiter_pairs.get(opening_delimiter)
         return closing_delimiter is not None and text.endswith(closing_delimiter)
@@ -139,19 +128,7 @@ class InputValidator:
         return components
 
     def _is_valid_component(self, component: str) -> bool:
-        try:
-            sympify(component, locals=self.sympy_locals)
-        except (SympifyError, TypeError, SyntaxError):
-            return False
-
-        return True
+        return self.validate_component_expression(component)
 
     def _uses_allowed_symbols(self, component: str) -> bool:
-        identifiers = self._extract_identifiers(component)
-        if not identifiers.issubset(self.allowed_names):
-            return False
-
-        return self._is_valid_component(component)
-
-    def _extract_identifiers(self, text: str) -> set[str]:
-        return set(re.findall(r"[A-Za-z_]\w*", text))
+        return self.validate_component_expression(component)

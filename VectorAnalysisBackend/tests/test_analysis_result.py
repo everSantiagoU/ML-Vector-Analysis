@@ -100,3 +100,18 @@ def test_analysis_result_can_be_imported_from_analysis_package():
     from mlvectoranalysis.analysis import AnalysisResult as ExportedAnalysisResult
 
     assert ExportedAnalysisResult is AnalysisResult
+
+
+def test_explicit_empty_operations():
+    assert AnalysisResult.from_vector(build_sample_vector(), operations_available=[]).operations_available == []
+
+
+def test_caller_operations_are_copied_by_factory_and_constructor():
+    operations = ['evaluate']
+    first = AnalysisResult.from_vector(build_sample_vector(), operations_available=operations)
+    second = AnalysisResult.from_vector(build_sample_vector(), operations_available=operations)
+    direct = AnalysisResult('', {}, 'unknown', '', operations)
+    operations.append('caller')
+    first.operations_available.append('first')
+    assert second.operations_available == direct.operations_available == ['evaluate']
+    assert first.operations_available == ['evaluate', 'first']
