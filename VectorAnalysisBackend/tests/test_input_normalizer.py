@@ -37,3 +37,11 @@ def test_input_normalizer_can_be_imported_from_input_package():
     from mlvectoranalysis.input import InputNormalizer as ExportedInputNormalizer
 
     assert ExportedInputNormalizer is InputNormalizer
+
+
+def test_idempotent_normalization():
+    normalizer = InputNormalizer()
+    for raw in ['  r(t) = < t , t^2 , sen(t) >  ', '< t ^ 2, √ ( t ), π >', '<SENO(t),tg(t),LN(t)>']:
+        normalized = normalizer.normalize(raw)
+        assert normalizer.normalize(normalized) == normalized
+    assert normalizer.normalize('< t ^ 2, √ ( t ), π >') == '<t**2,sqrt(t),pi>'

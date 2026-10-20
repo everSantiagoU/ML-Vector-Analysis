@@ -1,30 +1,31 @@
 from __future__ import annotations
 from typing import Union
-from sympy import Symbol, cos, diff, exp, expand, integrate, simplify, sin, sympify, tan
+from sympy import Expr, Symbol, cos, diff, exp, expand, integrate, simplify, sin, sympify, tan
 
 
 class ComponentFunction:
-    def __init__(self, expression: str, variable: str = "t") -> None:
-        self.expression = expression
+    def __init__(self, expression: str | Expr, variable: str = "t") -> None:
+        # Strings here are trusted domain input. External text goes through ExpressionParser.
+        self.expression = str(expression)
         self.variable = variable
         self.symbol = Symbol(variable)
         self.symbolic_form = sympify(expression)
 
     def simplify(self) -> "ComponentFunction":
         simplified_expr = simplify(self.symbolic_form)
-        return ComponentFunction(str(simplified_expr), self.variable)
+        return ComponentFunction(simplified_expr, self.variable)
 
     def expand(self) -> "ComponentFunction":
         expanded_expr = expand(self.symbolic_form)
-        return ComponentFunction(str(expanded_expr), self.variable)
+        return ComponentFunction(expanded_expr, self.variable)
 
     def differentiate(self) -> "ComponentFunction":
         derivative_expr = diff(self.symbolic_form, self.symbol)
-        return ComponentFunction(str(derivative_expr), self.variable)
+        return ComponentFunction(derivative_expr, self.variable)
 
     def integrate(self) -> "ComponentFunction":
         integrated_expr = integrate(self.symbolic_form, self.symbol)
-        return ComponentFunction(str(integrated_expr), self.variable)
+        return ComponentFunction(integrated_expr, self.variable)
 
     def evaluate(self, value: float) -> float:
         result = self.symbolic_form.evalf(subs={self.symbol: value})

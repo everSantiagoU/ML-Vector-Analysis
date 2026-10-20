@@ -25,6 +25,9 @@ class AnalysisResult:
     summary: str
     operations_available: list[str] = field(default_factory=lambda: DEFAULT_OPERATIONS_AVAILABLE.copy())
 
+    def __post_init__(self) -> None:
+        self.operations_available = list(self.operations_available)
+
     @classmethod
     def from_vector(
         cls,
@@ -42,7 +45,9 @@ class AnalysisResult:
             component_types=component_types,
             vector_type=vector_type,
             summary=resolved_summary,
-            operations_available=operations_available or DEFAULT_OPERATIONS_AVAILABLE.copy(),
+            operations_available=(
+                DEFAULT_OPERATIONS_AVAILABLE if operations_available is None else operations_available
+            ),
         )
 
     def to_dict(self) -> dict[str, Any]:
