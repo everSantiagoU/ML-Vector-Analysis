@@ -1,4 +1,26 @@
-# Backend V1 de MLVectorAnalysis
+# Backend de MLVectorAnalysis
+
+La etapa de optimización agrega descenso de gradiente para funciones escalares
+`f(x,y,z)` y regresión lineal batch densa con dimensión arbitraria. Conserva
+las APIs de V1: `VectorFunction` sigue siendo una curva de tres componentes
+de **una** variable, no un campo gradiente multivariable.
+
+Consulta [la guía de optimización](docs/gradient_descent.md) para fórmulas,
+clases, convergencia, historial, complejidades y ejemplos; y [la verificación
+ejecutada](docs/gradient_descent_verification.md) para resultados y mediciones.
+NumPy 2.2.6 es la única nueva dependencia del núcleo; Matplotlib 3.10.8 es
+opcional en `requirements-examples.txt`. SymPy y pytest conservan sus versiones.
+
+```sh
+# Desde VectorAnalysisBackend, tras instalar requirements.txt en .venv:
+PYTHONPATH=src .venv/bin/python examples/optimize_xyz.py
+PYTHONPATH=src .venv/bin/python examples/train_linear_regression.py --block-size 128
+```
+
+Los ejemplos guardan JSON en `outputs/` (ignorado por Git). Aceptan `--help`,
+`--output` y `--plot ruta.png`; los gráficos se guardan sin abrir ventanas.
+
+## Flujo V1
 
 Flujo Python/SymPy: texto → normalización → validación restringida → modelo
 simbólico de tres componentes → clasificación → resultado serializable.
