@@ -23,26 +23,36 @@ def validate_variable(variable: str) -> None:
 
 
 def parse_scalar(text: str, variable: str) -> Expr:
+    """V1 entry point: exactly one configured variable."""
+    return parse_scalar_variables(text, (variable,))
+
+
+def parse_scalar_variables(text: str, variables: tuple[str, ...]) -> Expr:
     """Validate the entire AST before constructing any SymPy expression."""
     if not isinstance(text, str) or not text.strip():
         raise ValueError("Component expression must be nonempty text.")
-    validate_variable(variable)
+    if not isinstance(variables, tuple) or not variables:
+        raise ValueError("Variables must be a nonempty ordered tuple.")
+    for variable in variables:
+        validate_variable(variable)
+    if len(set(variables)) != len(variables):
+        raise ValueError("Variables must be distinct.")
     try:
         tree = ast.parse(text, mode="eval").body
-        _validate(tree, variable)
-        return _build(tree, variable)
+        _validate(tree, variables)
+        return _build(tree, variables)
     except (SyntaxError, TypeError, ArithmeticError, RecursionError) as error:
         raise ValueError(f"Invalid component expression: {text}") from error
 
 
-def _validate(node: ast.AST, variable: str) -> None:
+def _validate(node: ast.AST, variable: tuple[str, ...]) -> None:
     if isinstance(node, ast.Constant):
         if type(node.value) not in (int, float):
             raise ValueError("Only real numeric literals are allowed.")
         if isinstance(node.value, float) and not math.isfinite(node.value):
             raise ValueError("Numeric literals must be finite.")
     elif isinstance(node, ast.Name):
-        if node.id not in {variable, *CONSTANTS}:
+        if node.id not in {*variable, *CONSTANTS}:
             raise ValueError(f"Unsupported symbol: {node.id}")
     elif isinstance(node, ast.BinOp) and type(node.op) in OPERATORS:
         _validate(node.left, variable)
@@ -62,11 +72,11 @@ def _validate(node: ast.AST, variable: str) -> None:
         raise ValueError(f"Unsupported expression syntax: {type(node).__name__}")
 
 
-def _build(node: ast.AST, variable: str) -> Expr:
+def _build(node: ast.AST, variable: tuple[str, ...]) -> Expr:
     if isinstance(node, ast.Constant):
         return Integer(node.value) if type(node.value) is int else Float(node.value)
     if isinstance(node, ast.Name):
-        return Symbol(variable) if node.id == variable else CONSTANTS[node.id]
+        return Symbol(node.id) if node.id in variable else CONSTANTS[node.id]
     if isinstance(node, ast.BinOp):
         return OPERATORS[type(node.op)](_build(node.left, variable), _build(node.right, variable))
     if isinstance(node, ast.UnaryOp):
