@@ -20,6 +20,28 @@ PYTHONPATH=src .venv/bin/python examples/train_linear_regression.py --block-size
 Los ejemplos guardan JSON en `outputs/` (ignorado por Git). Aceptan `--help`,
 `--output` y `--plot ruta.png`; los gráficos se guardan sin abrir ventanas.
 
+## Redes neuronales con NumPy
+
+La nueva etapa añade un MLP denso con backpropagation manual, Tanh/ReLU,
+salida lineal, HalfMSE y entropía cruzada estable, SGD y minibatches.
+Incluye evaluación independiente, contextos por ejecución, historial acotado
+y JSON estricto. Las APIs anteriores se conservan.
+
+Consulta [la guía MLP](docs/mlp_numpy.md) para contratos, fórmulas, memoria y
+uso; y [la verificación ejecutada](docs/mlp_numpy_verification.md) para pruebas,
+resultados XOR/sin(x) y benchmark. No se agregan dependencias al núcleo.
+
+Desde `VectorAnalysisBackend`, con el entorno virtual existente:
+
+```sh
+PYTHONPATH=src .venv/bin/python examples/train_mlp_xor.py --plot outputs/mlp_xor.png
+PYTHONPATH=src .venv/bin/python examples/train_mlp_sine.py --plot outputs/mlp_sine.png
+PYTHONPATH=src .venv/bin/python benchmarks/benchmark_mlp.py
+```
+
+Los ejemplos funcionan sin `--plot`, ofrecen `--help` y exportan JSON a
+`outputs/`. Matplotlib se usa únicamente al solicitar gráficos.
+
 ## Flujo V1
 
 Flujo Python/SymPy: texto → normalización → validación restringida → modelo
