@@ -5,10 +5,12 @@ import os
 import platform
 import statistics
 import sys
+import tempfile
 from pathlib import Path
 from time import perf_counter
 import numpy as np
-from mlvectoranalysis.nn import MLP, Trainer, TrainingConfig, SGDOptimizer, HalfMSELoss
+from mlvectoranalysis.nn import (AdamOptimizer, HalfMSELoss, MLP, SGDOptimizer, Trainer, TrainingConfig,
+                                 load_checkpoint, save_checkpoint)
 
 
 class TimedTrainer(Trainer):
@@ -23,18 +25,19 @@ class TimedTrainer(Trainer):
         return result
 
 
-def trial(n, widths, batch_size, epochs, seed):
+def trial(n, widths, batch_size, epochs, seed, optimizer_name='sgd'):
     start = perf_counter()
     rng = np.random.default_rng(seed)
     X = rng.normal(size=(n, widths[0]))
     targets = np.sin(X[:, :widths[-1]])
     model = MLP(widths, seed=seed)
-    optimizer = SGDOptimizer(model.parameters(), .01)
+    optimizer = SGDOptimizer(model.parameters(), .01) if optimizer_name == 'sgd' else AdamOptimizer(model.parameters(), .01)
     trainer = TimedTrainer(HalfMSELoss(), optimizer,
                            TrainingConfig(epochs=epochs, batch_size=batch_size, seed=seed, history_limit=20))
     preparation = perf_counter() - start
     start = perf_counter()
-    result = trainer.fit(model, X, targets)
+    final_states = []
+    result = trainer.fit(model, X, targets, checkpoint_callback=lambda state: final_states.append(state))
     fit_seconds = perf_counter() - start
     start = perf_counter()
     serialized = json.dumps(result.to_dict(), allow_nan=False)
@@ -43,9 +46,21 @@ def trial(n, widths, batch_size, epochs, seed):
         raise RuntimeError(f'Benchmark did not complete declared work: {result.status}')
     B = min(n, batch_size)
     params = model.parameters()
+    with tempfile.TemporaryDirectory() as directory:
+        checkpoint = Path(directory) / 'benchmark.npz'
+        start = perf_counter()
+        info = save_checkpoint(checkpoint, model=model, optimizer=optimizer, training_state=final_states[-1],
+                               metadata={'experiment_name': 'benchmark_mlp'})
+        checkpoint_save_seconds = perf_counter() - start
+        restored = MLP(widths, seed=seed + 1000)
+        restored_optimizer = SGDOptimizer(restored.parameters(), .01) if optimizer_name == 'sgd' else AdamOptimizer(restored.parameters(), .01)
+        start = perf_counter()
+        load_checkpoint(checkpoint, model=restored, optimizer=restored_optimizer)
+        checkpoint_load_seconds = perf_counter() - start
     memory = dict(parameter_bytes=sum(p.data.nbytes for p in params),
                   gradient_bytes=sum(p.grad.nbytes for p in params),
-                  sgd_workspace_bytes=optimizer.workspace_bytes,
+                  optimizer_workspace_bytes=optimizer.workspace_bytes,
+                  optimizer_state_bytes=getattr(optimizer, 'state_bytes', 0),
                   retained_cache_upper_bound_bytes=8 * B * (widths[0] + 2 * sum(widths[1:])),
                   backward_temporaries_upper_bound_bytes=8 * (B * 3 * max(widths) + max(a*b+b for a,b in zip(widths, widths[1:]))),
                   dataset_bytes=X.nbytes + targets.nbytes, input_dtype_conversion_bytes=0,
@@ -57,9 +72,11 @@ def trial(n, widths, batch_size, epochs, seed):
                       for m in result.history),
                   serialized_result_bytes=len(serialized.encode()),
                   full_predict_result_bytes_if_requested=n * widths[-1] * 8)
-    return dict(preparation_seconds=preparation, fit_seconds=fit_seconds,
+    return dict(optimizer=optimizer_name, preparation_seconds=preparation, fit_seconds=fit_seconds,
                 training_seconds=fit_seconds - trainer.evaluation_seconds,
                 evaluation_seconds=trainer.evaluation_seconds, instrumentation_seconds=instrumentation,
+                checkpoint_save_seconds=checkpoint_save_seconds, checkpoint_load_seconds=checkpoint_load_seconds,
+                checkpoint_bytes=info.bytes_written,
                 updates=result.optimizer_steps, examples_processed=epochs*n,
                 evaluation_examples=trainer.evaluation_examples, epochs_completed=result.epochs_completed,
                 final_train_loss=result.history[-1].train_loss, status=result.status, memory_estimates=memory)
@@ -72,6 +89,7 @@ def main():
     cli.add_argument('--batch-sizes', type=int, nargs='+', default=[16, 64, 256])
     cli.add_argument('--repeats', type=int, default=3)
     cli.add_argument('--seed', type=int, default=42)
+    cli.add_argument('--optimizers', choices=('sgd', 'adam'), nargs='+', default=['sgd', 'adam'])
     cli.add_argument('--output', type=Path, default=Path('outputs/benchmark_mlp.json'))
     args = cli.parse_args()
     networks = [[8, 16, 1], [8, 64, 32, 1]]
@@ -84,11 +102,13 @@ def main():
     cases = []
     for widths in networks:
         for batch in args.batch_sizes:
-            trial(64, widths, min(batch, 64), 2, args.seed + 1)  # separate discarded warmup model/data
-            runs = [trial(args.n, widths, batch, args.epochs, args.seed) for _ in range(args.repeats)]
-            timings = {key: statistics.median(run[key] for run in runs) for key in (
-                'preparation_seconds', 'fit_seconds', 'training_seconds', 'evaluation_seconds', 'instrumentation_seconds')}
-            cases.append(dict(widths=widths, batch_size=batch, medians=timings, runs=runs))
+            for optimizer_name in args.optimizers:
+                trial(64, widths, min(batch, 64), 2, args.seed + 1, optimizer_name)  # separate discarded warmup
+                runs = [trial(args.n, widths, batch, args.epochs, args.seed, optimizer_name) for _ in range(args.repeats)]
+                timings = {key: statistics.median(run[key] for run in runs) for key in (
+                    'preparation_seconds', 'fit_seconds', 'training_seconds', 'evaluation_seconds', 'instrumentation_seconds',
+                    'checkpoint_save_seconds', 'checkpoint_load_seconds', 'checkpoint_bytes')}
+                cases.append(dict(widths=widths, batch_size=batch, optimizer=optimizer_name, medians=timings, runs=runs))
     payload = dict(config=vars(args) | {'output': str(args.output)}, dtype='float64',
         versions=dict(python=sys.version, numpy=np.__version__, platform=platform.platform()),
         blas=np.__config__.show(mode='dicts'),
@@ -109,7 +129,8 @@ def main():
     args.output.write_text(serialized + '\n', encoding='utf-8')
     for case in cases:
         print(json.dumps(dict(widths=case['widths'], batch_size=case['batch_size'], **case['medians'],
-                              updates=case['runs'][0]['updates'], examples_processed=case['runs'][0]['examples_processed']), allow_nan=False))
+                              optimizer=case['optimizer'], updates=case['runs'][0]['updates'],
+                              examples_processed=case['runs'][0]['examples_processed']), allow_nan=False))
 
 
 if __name__ == '__main__':

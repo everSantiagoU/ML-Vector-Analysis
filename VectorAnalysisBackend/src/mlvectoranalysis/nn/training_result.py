@@ -57,3 +57,25 @@ class _History:
     @property
     def snapshots(self):
         return tuple(snapshot for _, snapshot in self.points)
+
+    def state_dict(self):
+        return dict(limit=self.limit, stride=self.stride, ordinal=self.ordinal,
+                    points=[dict(ordinal=ordinal, metric=asdict(metric)) for ordinal, metric in self.points])
+
+    @classmethod
+    def from_state_dict(cls, state, limit):
+        if not isinstance(state, dict) or set(state) != {'limit', 'stride', 'ordinal', 'points'}:
+            raise ValueError('History state is invalid.')
+        if state['limit'] != limit or not isinstance(state['stride'], int) or state['stride'] < 1 or state['stride'] & (state['stride'] - 1):
+            raise ValueError('History state is incompatible.')
+        if not isinstance(state['ordinal'], int) or state['ordinal'] < 0 or not isinstance(state['points'], list):
+            raise ValueError('History state is invalid.')
+        result = cls(limit)
+        result.stride, result.ordinal = state['stride'], state['ordinal']
+        try:
+            result.points = [(item['ordinal'], EpochMetrics(**item['metric'])) for item in state['points']]
+        except (KeyError, TypeError) as error:
+            raise ValueError('History points are invalid.') from error
+        if len(result.points) > limit or any(not isinstance(i, int) or i < 0 for i, _ in result.points):
+            raise ValueError('History state exceeds its limit.')
+        return result

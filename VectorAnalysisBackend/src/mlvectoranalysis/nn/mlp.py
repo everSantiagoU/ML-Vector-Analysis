@@ -1,6 +1,7 @@
 """Sequential dense network, with a linear output for either supported task."""
+from collections.abc import Mapping
 import numpy as np
-from ._validation import DTYPE, array, integer
+from ._validation import DTYPE, array, finite, integer
 from .layers import LinearLayer, _Cache, checked_cache
 from .activations import Tanh, ReLU
 from .losses import softmax
@@ -48,6 +49,13 @@ class MLP:
         self._parameters = unique_parameters(p for layer in self.layers for p in layer.parameters())
         self.input_width = self.layers[0].in_features
         self.output_width = width
+        linear = [layer for layer in self.layers if isinstance(layer, LinearLayer)]
+        self._sizes = tuple([linear[0].in_features] + [layer.out_features for layer in linear])
+        activations = [layer for layer in self.layers if isinstance(layer, (Tanh, ReLU))]
+        self._activation = ('tanh' if not activations or isinstance(activations[0], Tanh) else 'relu')
+        if any(('tanh' if isinstance(layer, Tanh) else 'relu') != self._activation for layer in activations):
+            raise ValueError('Hidden activations must be consistent.')
+        self._live_contexts = set()
 
     @property
     def layers(self):
@@ -68,6 +76,8 @@ class MLP:
                 if retain_cache:
                     caches.append(cache)
             context = _Cache(self, X.shape, caches, tuple(p.version for p in self.parameters())) if retain_cache else None
+            if context is not None:
+                self._live_contexts.add(id(context))
             return X, context
         except Exception:
             for cache in caches:
@@ -82,6 +92,7 @@ class MLP:
             for cache in context.payload:
                 cache.release()
         context.release()
+        self._live_contexts.discard(id(context))
 
     def backward(self, d_outputs, context):
         gradient = array(d_outputs, 'd_outputs', 2)
@@ -120,3 +131,54 @@ class MLP:
         if self.output_width < 2:
             raise ValueError('Classification requires at least two logits.')
         return self._predict(X, batch_size, lambda x: x.argmax(axis=1), None, np.int64)
+
+    @property
+    def sizes(self):
+        return self._sizes
+
+    @property
+    def activation(self):
+        return self._activation
+
+    def state_dict(self):
+        """Return architecture and independent parameter copies for checkpoints."""
+        return dict(format_version=1, model_type='mlp', sizes=list(self.sizes), activation=self.activation,
+                    parameters=[dict(name=p.name, shape=list(p.data.shape), dtype=p.data.dtype.name, data=p.data.copy())
+                                for p in self.parameters()])
+
+    def _validated_state(self, state):
+        expected = {'format_version', 'model_type', 'sizes', 'activation', 'parameters'}
+        if not isinstance(state, Mapping) or set(state) != expected:
+            raise ValueError('Model state has missing or unexpected fields.')
+        if state['format_version'] != 1 or state['model_type'] != 'mlp':
+            raise ValueError('Incompatible MLP state format.')
+        if tuple(state['sizes']) != self.sizes or state['activation'] != self.activation:
+            raise ValueError('MLP architecture or activation is incompatible.')
+        entries = state['parameters']
+        if not isinstance(entries, (list, tuple)) or len(entries) != len(self.parameters()):
+            raise ValueError('MLP parameter count is incompatible.')
+        values = []
+        for parameter, entry in zip(self.parameters(), entries):
+            if not isinstance(entry, Mapping) or set(entry) != {'name', 'shape', 'dtype', 'data'}:
+                raise ValueError('MLP parameter state is invalid.')
+            value = entry['data']
+            if (entry['name'] != parameter.name or tuple(entry['shape']) != parameter.data.shape
+                    or entry['dtype'] != np.dtype(DTYPE).name or not isinstance(value, np.ndarray)
+                    or value.shape != parameter.data.shape or value.dtype != DTYPE):
+                raise ValueError('MLP parameter name, shape, or dtype is incompatible.')
+            finite(value)
+            values.append(value.copy())
+        return values
+
+    def load_state_dict(self, state):
+        """Atomically copy checkpoint weights into existing Parameter buffers.
+
+        Retained contexts reference old activations and versions, so loading is
+        rejected until callers release them instead of silently invalidating a
+        pending backward pass.
+        """
+        values = self._validated_state(state)
+        if self._live_contexts:
+            raise ValueError('Cannot load MLP state while retained contexts are live.')
+        for parameter, value in zip(self.parameters(), values):
+            parameter.assign(value)
