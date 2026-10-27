@@ -30,6 +30,8 @@ y JSON estricto. Las APIs anteriores se conservan.
 Consulta [la guía MLP](docs/mlp_numpy.md) para contratos, fórmulas, memoria y
 uso; y [la verificación ejecutada](docs/mlp_numpy_verification.md) para pruebas,
 resultados XOR/sin(x) y benchmark. No se agregan dependencias al núcleo.
+La siguiente etapa conserva SGD, añade Adam y checkpoints NPZ locales seguros:
+consulta [Adam y checkpoints](docs/adam_checkpoints.md).
 
 Desde `VectorAnalysisBackend`, con el entorno virtual existente:
 
@@ -37,6 +39,8 @@ Desde `VectorAnalysisBackend`, con el entorno virtual existente:
 PYTHONPATH=src .venv/bin/python examples/train_mlp_xor.py --plot outputs/mlp_xor.png
 PYTHONPATH=src .venv/bin/python examples/train_mlp_sine.py --plot outputs/mlp_sine.png
 PYTHONPATH=src .venv/bin/python benchmarks/benchmark_mlp.py
+PYTHONPATH=src .venv/bin/python examples/train_mlp_resume.py --optimizer adam --epochs 6 --checkpoint /tmp/mlp.npz
+PYTHONPATH=src .venv/bin/python examples/train_mlp_resume.py --optimizer adam --resume --additional-epochs 4 --checkpoint /tmp/mlp.npz
 ```
 
 Los ejemplos funcionan sin `--plot`, ofrecen `--help` y exportan JSON a
