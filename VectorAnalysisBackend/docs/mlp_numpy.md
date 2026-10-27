@@ -16,7 +16,8 @@ framework de deep learning ni diferencias finitas durante entrenamiento.
 | `activations.py` | `Tanh`, `ReLU`, sin parámetros |
 | `mlp.py` | `MLP`, composición, backward inverso, predicción por bloques |
 | `losses.py` | `HalfMSELoss`, `CrossEntropyLoss`, pérdidas sin estado compartido |
-| `optimizers.py` | `SGDOptimizer`, validación atómica de candidatos y actualización |
+| `optimizers.py` | Protocolo `Optimizer`, `SGDOptimizer` y `AdamOptimizer` atómicos |
+| `checkpoint.py` | Estado de época y checkpoint local NPZ/JSON validado y atómico |
 | `data.py` | `MiniBatchIterator`, mezcla reproducible, último lote incluido |
 | `training.py` | `TrainingConfig`, `Trainer`, entrenamiento y evaluación separados |
 | `training_result.py` | `TrainingResult`, `EpochMetrics`, `EvaluationMetrics`, historial acotado |
@@ -28,9 +29,9 @@ classDiagram
     MLP *-- Tanh
     MLP *-- ReLU
     LinearLayer *-- Parameter
-    SGDOptimizer --> Parameter
+    Optimizer --> Parameter
     Trainer --> MLP
-    Trainer --> SGDOptimizer
+    Trainer --> Optimizer
     Trainer --> MiniBatchIterator
     Trainer --> HalfMSELoss
     Trainer --> CrossEntropyLoss
@@ -157,14 +158,15 @@ ni alteración externa de forma/dtype/buffers.
 
 ## Entrenamiento, evaluación y resultados
 
-La tasa de aprendizaje pertenece únicamente a `SGDOptimizer` y es positiva,
-real y finita. `TrainingConfig` valida `epochs`, `batch_size`, `shuffle`,
+La tasa de aprendizaje pertenece al optimizador y es positiva; SGD y Adam
+conservan sus estados serializables. La guía de [Adam y checkpoints](adam_checkpoints.md)
+describe la reanudación exacta por época y el formato local. `TrainingConfig` valida `epochs`, `batch_size`, `shuffle`,
 `seed`, `eval_every` e `history_limit>=2`; no duplica la tasa. El resultado
 incluye configuración, tasa efectiva y semilla.
 
 `fit` prepara y valida entrenamiento y validación antes de actualizar. La
 conversión de datos se realiza una vez. Cada lote ejecuta:
-`zero_grad → forward(cache) → loss.value_and_grad → backward → SGD.step`.
+`zero_grad → forward(cache) → loss.value_and_grad → backward → optimizer.step`.
 
 `MiniBatchIterator` conserva los datasets residentes y genera O(N) índices
 por época. El RNG local persiste y avanza entre épocas. Indexación avanzada
