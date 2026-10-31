@@ -150,3 +150,31 @@ con `json.dumps`. Las operaciones predeterminadas son, en orden: `simplify`,
 Estas decisiones concretan las ambigüedades del diagrama: métodos en snake_case,
 sin duplicados, agregación de componentes, dependencias de creación sin herencia
 y asociación adicional de la fachada al analizador para completar el flujo V1.
+
+## Modelado educativo de lenguaje local
+
+`mlvectoranalysis.language` implementa tokenizer por palabras/puntuación,
+vocabulario determinista, ventanas sin cruzar documentos y embeddings
+entrenables conectados al MLP existente. Usa NumPy float64, CrossEntropyLoss,
+Trainer y Adam. Es un modelo de contexto fijo; no es un LLM ni Transformer.
+La [guía del feature](docs/language_model.md) detalla diseño, contratos,
+memoria, pruebas y lectura de la visualización.
+
+Desde `VectorAnalysisBackend`:
+
+```sh
+PYTHONPATH=src .venv/bin/python examples/train_language_model.py --output outputs/language_model.json
+# Opcional, para graficar:
+.venv/bin/python -m pip install -r requirements-examples.txt
+PYTHONPATH=src .venv/bin/python examples/train_language_model.py --plot outputs/language_model.png
+PYTHONPATH=src .venv/bin/python benchmarks/benchmark_language.py
+.venv/bin/python -m pytest -q
+```
+
+El JSON incluye pérdida inicial/final, predicciones, tokens/IDs, ventanas y
+probabilidades. La gráfica muestra esas tres etapas y se guarda sin abrir
+ventanas. Sin `--plot` no se importa Matplotlib.
+
+Verificación de esta etapa: `.venv/bin/python -m pytest -q` → **605 passed in
+19.97s**. El ejemplo con semilla 42 reduce la pérdida de 2,5810 a 0,2746;
+se comprobaron CLI con/sin PNG y JSON estricto (detalles en la guía).
