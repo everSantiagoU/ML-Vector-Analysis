@@ -1,5 +1,37 @@
 # Backend de MLVectorAnalysis
 
+## Proyectos locales, RAG y evaluación
+
+`mlvectoranalysis.projects` incorpora una fachada local para crear proyectos,
+importar documentos, validar/previsualizar, recomendar una estrategia, consultar
+fuentes y evaluar casos del usuario. No hay frontend ni servidor HTTP en esta fase.
+
+- Documentos **TXT/MD UTF-8**; casos de evaluación **JSON/JSONL** validados.
+- RAG léxico TF-IDF determinista, con fuentes y offsets visibles y contexto acotado.
+- Proveedor de **extractos de demostración, sin LLM**. RAG no modifica pesos.
+- Evaluación de coincidencia literal y recuperación de fuentes; sin métricas semánticas.
+- Proyectos/artefactos JSON versionados, escritura atómica y exportación de datos/configuración.
+- Ajuste fino de modelos de lenguaje **no disponible**. El MLP NumPy educativo sigue separado.
+
+No se añaden dependencias. La [guía de proyectos locales](docs/local_projects.md)
+detalla contratos, DTOs para una futura API/React, estados, seguridad, límites,
+reproducción y extensiones. La [verificación ejecutada](docs/local_projects_verification.md)
+registra **795 pruebas aprobadas**, sin fallos ni skips, y los ejemplos comprobados.
+
+Desde `VectorAnalysisBackend`:
+
+```sh
+PYTHONPATH=src .venv/bin/python examples/local_project.py --data-dir outputs/local-projects
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m pytest -q
+```
+
+El ejemplo recorre importación → validación → recomendación → RAG → evaluación →
+exportación y muestra la ruta del manifiesto. `--help` explica cómo pasar documentos
+y casos propios. La ejecución es síncrona, con un solo escritor y cancelación
+cooperativa en límites de etapa. No admite CSV, PDF, DOCX ni modelos arbitrarios.
+
+## Optimización y APIs anteriores
+
 La etapa de optimización agrega descenso de gradiente para funciones escalares
 `f(x,y,z)` y regresión lineal batch densa con dimensión arbitraria. Conserva
 las APIs de V1: `VectorFunction` sigue siendo una curva de tres componentes
